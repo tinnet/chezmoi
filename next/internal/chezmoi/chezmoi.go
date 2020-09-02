@@ -9,7 +9,7 @@ import (
 
 // Configuration constants.
 const (
-	UNIXFileModes   = runtime.GOOS != "windows"
+	UNIXFileModes    = runtime.GOOS != "windows"
 	PathSeparator    = '/'
 	PathSeparatorStr = string(PathSeparator)
 	ignorePrefix     = "."

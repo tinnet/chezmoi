@@ -6,9 +6,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/twpayne/chezmoi/next/internal/chezmoitest"
 	vfs "github.com/twpayne/go-vfs"
 	"github.com/twpayne/go-vfs/vfst"
+
+	"github.com/twpayne/chezmoi/next/internal/chezmoitest"
 )
 
 var _ System = &RealSystem{}
