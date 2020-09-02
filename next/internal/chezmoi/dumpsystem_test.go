@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twpayne/chezmoi/next/internal/chezmoitest"
 	"github.com/twpayne/go-vfs/vfst"
 )
 
@@ -31,25 +32,25 @@ func TestDumpSystem(t *testing.T) {
 	defer cleanup()
 
 	s := NewSourceState(
-		WithSystem(NewRealSystem(fs, newTestPersistentState())),
+		WithSystem(NewRealSystem(fs, chezmoitest.NewPersistentState())),
 		WithSourcePath("/home/user/.local/share/chezmoi"),
 	)
 	require.NoError(t, s.Read())
 	require.NoError(t, s.Evaluate())
 
 	dumpSystem := NewDumpSystem()
-	require.NoError(t, s.ApplyAll(dumpSystem, "", NewIncludeSet(IncludeAll)))
+	require.NoError(t, s.ApplyAll(dumpSystem, "", NewIncludeSet(IncludeAll), 0))
 	expectedData := map[string]interface{}{
 		"dir": &dirData{
 			Type: dataTypeDir,
 			Name: "dir",
-			Perm: 0o755,
+			Perm: 0o777,
 		},
 		"dir/foo": &fileData{
 			Type:     dataTypeFile,
 			Name:     "dir/foo",
 			Contents: "bar",
-			Perm:     0o644,
+			Perm:     0o666,
 		},
 		"script": &scriptData{
 			Type:     dataTypeScript,

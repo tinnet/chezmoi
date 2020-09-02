@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
 	"github.com/twpayne/chezmoi/next/internal/chezmoi"
@@ -33,5 +35,5 @@ func init() {
 }
 
 func (c *Config) runApplyCmd(cmd *cobra.Command, args []string) error {
-	return c.applyArgs(c.destSystem, c.DestDir, args, c.apply.include, c.apply.recursive)
+	return c.applyArgs(c.destSystem, c.DestDir, args, c.apply.include, c.apply.recursive, os.FileMode(c.Umask))
 }

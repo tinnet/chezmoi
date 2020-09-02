@@ -24,31 +24,31 @@ stderr 'not in source state'
     "type": "file",
     "name": ".bashrc",
     "contents": "# contents of .bashrc\n",
-    "perm": 420
+    "perm": 438
   },
   ".binary": {
     "type": "file",
     "name": ".binary",
     "contents": "#!/bin/sh\n",
-    "perm": 493
+    "perm": 511
   },
   ".exists": {
     "type": "file",
     "name": ".exists",
     "contents": "",
-    "perm": 420
+    "perm": 438
   },
   ".gitconfig": {
     "type": "file",
     "name": ".gitconfig",
     "contents": "[core]\n  autocrlf = false\n[user]\n  email = you@example.com\n  name = Your Name\n",
-    "perm": 420
+    "perm": 438
   },
   ".hushlogin": {
     "type": "file",
     "name": ".hushlogin",
     "contents": "",
-    "perm": 420
+    "perm": 438
   },
   ".ssh": {
     "type": "dir",
@@ -59,7 +59,7 @@ stderr 'not in source state'
     "type": "file",
     "name": ".ssh/config",
     "contents": "# contents of .ssh/config\n",
-    "perm": 420
+    "perm": 438
   },
   ".symlink": {
     "type": "symlink",
@@ -73,7 +73,7 @@ stderr 'not in source state'
     "type": "file",
     "name": ".bashrc",
     "contents": "# contents of .bashrc\n",
-    "perm": 420
+    "perm": 438
   }
 }
 -- golden/dump-ssh.json --
@@ -87,7 +87,7 @@ stderr 'not in source state'
     "type": "file",
     "name": ".ssh/config",
     "contents": "# contents of .ssh/config\n",
-    "perm": 420
+    "perm": 438
   }
 }
 -- golden/dump-ssh-non-recursive.json --
@@ -104,18 +104,18 @@ stderr 'not in source state'
     name: .bashrc
     contents: |
         # contents of .bashrc
-    perm: 420
+    perm: 438
 .binary:
     type: file
     name: .binary
     contents: |
         #!/bin/sh
-    perm: 493
+    perm: 511
 .exists:
     type: file
     name: .exists
     contents: ""
-    perm: 420
+    perm: 438
 .gitconfig:
     type: file
     name: .gitconfig
@@ -125,12 +125,12 @@ stderr 'not in source state'
         [user]
           email = you@example.com
           name = Your Name
-    perm: 420
+    perm: 438
 .hushlogin:
     type: file
     name: .hushlogin
     contents: ""
-    perm: 420
+    perm: 438
 .ssh:
     type: dir
     name: .ssh
@@ -140,7 +140,7 @@ stderr 'not in source state'
     name: .ssh/config
     contents: |
         # contents of .ssh/config
-    perm: 420
+    perm: 438
 .symlink:
     type: symlink
     name: .symlink

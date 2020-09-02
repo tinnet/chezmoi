@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
 	"github.com/twpayne/chezmoi/next/internal/chezmoi"
@@ -46,5 +48,5 @@ func (c *Config) runUpdateCmd(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	return c.applyArgs(c.destSystem, c.DestDir, args, c.update.include, c.update.recursive)
+	return c.applyArgs(c.destSystem, c.DestDir, args, c.update.include, c.update.recursive, os.FileMode(c.Umask))
 }

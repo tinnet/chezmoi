@@ -11,6 +11,7 @@ import (
 	xdg "github.com/twpayne/go-xdg/v3"
 
 	"github.com/twpayne/chezmoi/next/internal/chezmoi"
+	"github.com/twpayne/chezmoi/next/internal/chezmoitest"
 )
 
 func TestAddTemplateFuncPanic(t *testing.T) {
@@ -89,8 +90,12 @@ func TestValidateKeys(t *testing.T) {
 }
 
 func newTestConfig(t *testing.T, fs vfs.FS, options ...configOption) *Config {
+	system := chezmoi.NewRealSystem(fs, chezmoitest.NewPersistentState())
 	c, err := newConfig(append(
 		[]configOption{
+			withBaseSystem(system),
+			withDestSystem(system),
+			withSourceSystem(system),
 			withTestFS(fs),
 			withTestUser("user"),
 		},
@@ -154,7 +159,7 @@ func withStdin(stdin io.Reader) configOption {
 	}
 }
 
-func withStdout(stdout io.WriteCloser) configOption {
+func withStdout(stdout io.Writer) configOption {
 	return func(c *Config) {
 		c.stdout = stdout
 	}

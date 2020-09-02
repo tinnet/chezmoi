@@ -3,8 +3,15 @@
 package chezmoi
 
 import (
+	"os"
 	"path"
+	"syscall"
 )
+
+func init() {
+	Umask = os.FileMode(syscall.Umask(0))
+	syscall.Umask(int(Umask))
+}
 
 // PathJoin returns a clean, absolute path. If file is not an absolute path then
 // it is joined on to dir.

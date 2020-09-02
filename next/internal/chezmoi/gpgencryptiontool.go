@@ -75,7 +75,7 @@ func (t *GPGEncryptionTool) Encrypt(plaintext []byte) (ciphertext []byte, err er
 		err = multierr.Append(err, os.RemoveAll(tempFile.Name()))
 	}()
 
-	if POSIXFileModes {
+	if UNIXFileModes {
 		if err = tempFile.Chmod(0o600); err != nil {
 			return
 		}

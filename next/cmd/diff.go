@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -37,7 +38,7 @@ func init() {
 func (c *Config) runDiffCmd(cmd *cobra.Command, args []string) error {
 	sb := &strings.Builder{}
 	gitDiffSystem := chezmoi.NewGitDiffSystem(chezmoi.NewDryRunSystem(c.destSystem), sb, c.DestDir+chezmoi.PathSeparatorStr, c.color)
-	if err := c.applyArgs(gitDiffSystem, c.DestDir, args, c.Diff.include, c.Diff.recursive); err != nil {
+	if err := c.applyArgs(gitDiffSystem, c.DestDir, args, c.Diff.include, c.Diff.recursive, os.FileMode(c.Umask)); err != nil {
 		return err
 	}
 	return c.writeOutputString(sb.String())

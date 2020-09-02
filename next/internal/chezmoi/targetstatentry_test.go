@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/twpayne/chezmoi/next/internal/chezmoitest"
 	"github.com/twpayne/go-vfs/vfst"
 )
 
@@ -20,13 +21,13 @@ func TestTargetStateEntryApplyAndEqual(t *testing.T) {
 		{
 			name: "dir",
 			targetStateEntry: &TargetStateDir{
-				perm: 0o755,
+				perm: 0o777,
 			},
 		},
 		{
 			name: "file",
 			targetStateEntry: &TargetStateFile{
-				perm: 0o644,
+				perm: 0o666,
 				lazyContents: &lazyContents{
 					contents: []byte("bar"),
 				},
@@ -35,19 +36,19 @@ func TestTargetStateEntryApplyAndEqual(t *testing.T) {
 		{
 			name: "file_empty",
 			targetStateEntry: &TargetStateFile{
-				perm: 0o644,
+				perm: 0o666,
 			},
 		},
 		{
 			name: "file_empty_ok",
 			targetStateEntry: &TargetStateFile{
-				perm: 0o644,
+				perm: 0o666,
 			},
 		},
 		{
 			name: "file_executable",
 			targetStateEntry: &TargetStateFile{
-				perm: 0o755,
+				perm: 0o777,
 				lazyContents: &lazyContents{
 					contents: []byte("#!/bin/sh\n"),
 				},
@@ -56,7 +57,7 @@ func TestTargetStateEntryApplyAndEqual(t *testing.T) {
 		{
 			name: "present",
 			targetStateEntry: &TargetStatePresent{
-				perm: 0o644,
+				perm: 0o666,
 			},
 		},
 		{
@@ -76,19 +77,19 @@ func TestTargetStateEntryApplyAndEqual(t *testing.T) {
 				{
 					name: "not_present",
 					root: map[string]interface{}{
-						"/home/user": &vfst.Dir{Perm: 0o755},
+						"/home/user": &vfst.Dir{Perm: 0o777},
 					},
 				},
 				{
 					name: "existing_dir",
 					root: map[string]interface{}{
-						"/home/user/foo": &vfst.Dir{Perm: 0o755},
+						"/home/user/foo": &vfst.Dir{Perm: 0o777},
 					},
 				},
 				{
 					name: "existing_dir_chmod",
 					root: map[string]interface{}{
-						"/home/user/foo": &vfst.Dir{Perm: 0o644},
+						"/home/user/foo": &vfst.Dir{Perm: 0o666},
 					},
 				},
 				{
@@ -107,7 +108,7 @@ func TestTargetStateEntryApplyAndEqual(t *testing.T) {
 					name: "existing_file_chmod",
 					root: map[string]interface{}{
 						"/home/user/foo": &vfst.File{
-							Perm: 0o755,
+							Perm: 0o777,
 						},
 					},
 				},
@@ -129,14 +130,15 @@ func TestTargetStateEntryApplyAndEqual(t *testing.T) {
 					testFS, cleanup, err := vfst.NewTestFS(tc2.root)
 					require.NoError(t, err)
 					defer cleanup()
-					fs := NewRealSystem(testFS, newTestPersistentState())
+					fs := NewRealSystem(testFS, chezmoitest.NewPersistentState())
 
 					// Read the initial destination state entry from fs.
 					destStateEntry, err := NewDestStateEntry(fs, "/home/user/foo")
 					require.NoError(t, err)
 
 					// Apply the target state entry.
-					require.NoError(t, tc1.targetStateEntry.Apply(NewRealSystem(fs, newTestPersistentState()), destStateEntry))
+					targetSystem := NewRealSystem(fs, chezmoitest.NewPersistentState())
+					require.NoError(t, tc1.targetStateEntry.Apply(targetSystem, destStateEntry, Umask))
 
 					// Verify that the destination state entry matches the
 					// desired state.
@@ -146,7 +148,7 @@ func TestTargetStateEntryApplyAndEqual(t *testing.T) {
 					// verify that it is equal to the target state entry.
 					newDestStateEntry, err := NewDestStateEntry(fs, "/home/user/foo")
 					require.NoError(t, err)
-					equal, err := tc1.targetStateEntry.Equal(newDestStateEntry)
+					equal, err := tc1.targetStateEntry.Equal(newDestStateEntry, Umask)
 					require.NoError(t, err)
 					require.True(t, equal)
 				})
@@ -162,32 +164,23 @@ func targetStateTest(t *testing.T, ts TargetStateEntry) []vfst.PathTest {
 			vfst.TestDoesNotExist,
 		}
 	case *TargetStateDir:
-		pathTests := []vfst.PathTest{
+		return []vfst.PathTest{
 			vfst.TestIsDir,
+			vfst.TestModePerm(ts.perm &^ Umask),
 		}
-		if POSIXFileModes {
-			pathTests = append(pathTests, vfst.TestModePerm(ts.perm))
-		}
-		return pathTests
 	case *TargetStateFile:
 		expectedContents, err := ts.Contents()
 		require.NoError(t, err)
-		pathTests := []vfst.PathTest{
+		return []vfst.PathTest{
 			vfst.TestModeIsRegular,
 			vfst.TestContents(expectedContents),
+			vfst.TestModePerm(ts.perm &^ Umask),
 		}
-		if POSIXFileModes {
-			pathTests = append(pathTests, vfst.TestModePerm(ts.perm))
-		}
-		return pathTests
 	case *TargetStatePresent:
-		pathTests := []vfst.PathTest{
+		return []vfst.PathTest{
 			vfst.TestModeIsRegular,
+			vfst.TestModePerm(ts.perm &^ Umask),
 		}
-		if POSIXFileModes {
-			pathTests = append(pathTests, vfst.TestModePerm(ts.perm))
-		}
-		return pathTests
 	case *TargetStateScript:
 		return nil // FIXME how to verify scripts?
 	case *TargetStateSymlink:

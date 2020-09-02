@@ -24,7 +24,7 @@ func TestSourceStateApplyAll(t *testing.T) {
 			name: "empty",
 			root: map[string]interface{}{
 				"/home/user": map[string]interface{}{
-					".local/share/chezmoi": &vfst.Dir{Perm: 0o755},
+					".local/share/chezmoi": &vfst.Dir{Perm: 0o777},
 				},
 			},
 		},
@@ -33,14 +33,14 @@ func TestSourceStateApplyAll(t *testing.T) {
 			root: map[string]interface{}{
 				"/home/user": map[string]interface{}{
 					".local/share/chezmoi": map[string]interface{}{
-						"foo": &vfst.Dir{Perm: 0o755},
+						"foo": &vfst.Dir{Perm: 0o777},
 					},
 				},
 			},
 			tests: []interface{}{
 				vfst.TestPath("/home/user/foo",
 					vfst.TestIsDir,
-					vfst.TestModePerm(0o755),
+					vfst.TestModePerm(0o777&^Umask),
 				),
 			},
 		},
@@ -52,14 +52,14 @@ func TestSourceStateApplyAll(t *testing.T) {
 						"bar": "",
 					},
 					".local/share/chezmoi": map[string]interface{}{
-						"exact_foo": &vfst.Dir{Perm: 0o755},
+						"exact_foo": &vfst.Dir{Perm: 0o777},
 					},
 				},
 			},
 			tests: []interface{}{
 				vfst.TestPath("/home/user/foo",
 					vfst.TestIsDir,
-					vfst.TestModePerm(0o755),
+					vfst.TestModePerm(0o777&^Umask),
 				),
 				vfst.TestPath("/home/user/foo/bar",
 					vfst.TestDoesNotExist,
@@ -78,7 +78,7 @@ func TestSourceStateApplyAll(t *testing.T) {
 			tests: []interface{}{
 				vfst.TestPath("/home/user/foo",
 					vfst.TestModeIsRegular,
-					vfst.TestModePerm(0o644),
+					vfst.TestModePerm(0o666&^Umask),
 					vfst.TestContentsString("bar"),
 				),
 			},
@@ -111,7 +111,7 @@ func TestSourceStateApplyAll(t *testing.T) {
 			tests: []interface{}{
 				vfst.TestPath("/home/user/foo",
 					vfst.TestModeIsRegular,
-					vfst.TestModePerm(0o644),
+					vfst.TestModePerm(0o666&^Umask),
 					vfst.TestContentsString(""),
 				),
 			},
@@ -133,7 +133,7 @@ func TestSourceStateApplyAll(t *testing.T) {
 			tests: []interface{}{
 				vfst.TestPath("/home/user/foo",
 					vfst.TestModeIsRegular,
-					vfst.TestModePerm(0o644),
+					vfst.TestModePerm(0o666&^Umask),
 					vfst.TestContentsString("email = you@example.com"),
 				),
 			},
@@ -150,7 +150,7 @@ func TestSourceStateApplyAll(t *testing.T) {
 			tests: []interface{}{
 				vfst.TestPath("/home/user/foo",
 					vfst.TestModeIsRegular,
-					vfst.TestModePerm(0o644),
+					vfst.TestModePerm(0o666&^Umask),
 					vfst.TestContentsString("bar"),
 				),
 			},
@@ -168,7 +168,7 @@ func TestSourceStateApplyAll(t *testing.T) {
 			tests: []interface{}{
 				vfst.TestPath("/home/user/foo",
 					vfst.TestModeIsRegular,
-					vfst.TestModePerm(0o644),
+					vfst.TestModePerm(0o666&^Umask),
 					vfst.TestContentsString("baz"),
 				),
 			},
@@ -228,7 +228,7 @@ func TestSourceStateApplyAll(t *testing.T) {
 			s := NewSourceState(sourceStateOptions...)
 			require.NoError(t, s.Read())
 			require.NoError(t, s.Evaluate())
-			require.NoError(t, s.ApplyAll(system, "/home/user", NewIncludeSet(IncludeAll)))
+			require.NoError(t, s.ApplyAll(system, "/home/user", NewIncludeSet(IncludeAll), Umask))
 
 			vfst.RunTests(t, fs, "", tc.tests...)
 		})
@@ -246,7 +246,7 @@ func TestSourceStateRead(t *testing.T) {
 		{
 			name: "empty",
 			root: map[string]interface{}{
-				"/home/user/.local/share/chezmoi": &vfst.Dir{Perm: 0o755},
+				"/home/user/.local/share/chezmoi": &vfst.Dir{Perm: 0o777},
 			},
 			expectedSourceState: NewSourceState(
 				WithSourcePath("/home/user/.local/share/chezmoi"),
@@ -256,7 +256,7 @@ func TestSourceStateRead(t *testing.T) {
 			name: "dir",
 			root: map[string]interface{}{
 				"/home/user/.local/share/chezmoi": map[string]interface{}{
-					"foo": &vfst.Dir{Perm: 0o755},
+					"foo": &vfst.Dir{Perm: 0o777},
 				},
 			},
 			expectedSourceState: NewSourceState(
@@ -268,7 +268,7 @@ func TestSourceStateRead(t *testing.T) {
 							Name: "foo",
 						},
 						targetStateEntry: &TargetStateDir{
-							perm: 0o755,
+							perm: 0o777,
 						},
 					},
 				}),
@@ -292,7 +292,7 @@ func TestSourceStateRead(t *testing.T) {
 						},
 						lazyContents: newLazyContents([]byte("bar")),
 						targetStateEntry: &TargetStateFile{
-							perm:         0o644,
+							perm:         0o666,
 							lazyContents: newLazyContents([]byte("bar")),
 						},
 					},
@@ -314,7 +314,7 @@ func TestSourceStateRead(t *testing.T) {
 			root: map[string]interface{}{
 				"/home/user/.local/share/chezmoi": map[string]interface{}{
 					"foo":       "bar",
-					"exact_foo": &vfst.Dir{Perm: 0o755},
+					"exact_foo": &vfst.Dir{Perm: 0o777},
 				},
 			},
 			expectedError: "foo: duplicate target (/home/user/.local/share/chezmoi/exact_foo, /home/user/.local/share/chezmoi/foo)",
@@ -395,7 +395,7 @@ func TestSourceStateRead(t *testing.T) {
 							Name: "foo",
 						},
 						targetStateEntry: &TargetStateDir{
-							perm: 0o755,
+							perm: 0o777,
 						},
 					},
 					"foo/bar": &SourceStateFile{
@@ -408,7 +408,7 @@ func TestSourceStateRead(t *testing.T) {
 							contents: []byte("baz"),
 						},
 						targetStateEntry: &TargetStateFile{
-							perm: 0o644,
+							perm: 0o666,
 							lazyContents: &lazyContents{
 								contents: []byte("baz"),
 							},
@@ -521,7 +521,7 @@ func TestSourceStateRead(t *testing.T) {
 							Name: "foo",
 						},
 						targetStateEntry: &TargetStateDir{
-							perm: 0o755,
+							perm: 0o777,
 						},
 					},
 				}),

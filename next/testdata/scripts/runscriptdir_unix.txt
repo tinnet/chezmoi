@@ -24,7 +24,7 @@ dir/script
   "dir": {
     "type": "dir",
     "name": "dir",
-    "perm": 493
+    "perm": 511
   },
   "dir/script": {
     "type": "script",

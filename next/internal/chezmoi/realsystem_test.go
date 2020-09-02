@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twpayne/chezmoi/next/internal/chezmoitest"
 	vfs "github.com/twpayne/go-vfs"
 	"github.com/twpayne/go-vfs/vfst"
 )
@@ -26,7 +27,7 @@ func TestRealSystemGlob(t *testing.T) {
 	require.NoError(t, err)
 	defer cleanup()
 
-	s := NewRealSystem(fs, newTestPersistentState())
+	s := NewRealSystem(fs, chezmoitest.NewPersistentState())
 	for _, tc := range []struct {
 		pattern         string
 		expectedMatches []string
@@ -64,5 +65,5 @@ func TestRealSystemGlob(t *testing.T) {
 }
 
 func newTestRealSystem(fs vfs.FS) *RealSystem {
-	return NewRealSystem(fs, newTestPersistentState())
+	return NewRealSystem(fs, chezmoitest.NewPersistentState())
 }

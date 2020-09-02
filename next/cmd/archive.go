@@ -3,6 +3,7 @@ package cmd
 import (
 	"archive/tar"
 	"compress/gzip"
+	"os"
 	"os/user"
 	"strconv"
 	"strings"
@@ -39,7 +40,7 @@ func init() {
 func (c *Config) runArchiveCmd(cmd *cobra.Command, args []string) error {
 	archive := &strings.Builder{}
 	tarSystem := chezmoi.NewTARSystem(archive, tarHeaderTemplate())
-	if err := c.applyArgs(tarSystem, "", args, c.archive.include, c.archive.recursive); err != nil {
+	if err := c.applyArgs(tarSystem, "", args, c.archive.include, c.archive.recursive, os.ModePerm); err != nil {
 		return err
 	}
 	if err := tarSystem.Close(); err != nil {

@@ -99,8 +99,8 @@ type Config struct {
 
 	scriptStateBucket []byte
 	stdin             io.Reader
-	stdout            io.WriteCloser
-	stderr            io.WriteCloser
+	stdout            io.Writer
+	stderr            io.Writer
 }
 
 // A configOption sets and option on a Config.
@@ -148,7 +148,7 @@ func newConfig(options ...configOption) (*Config, error) {
 		configFile: getDefaultConfigFile(bds),
 		DestDir:    filepath.ToSlash(homeDir),
 		SourceDir:  getDefaultSourceDir(bds),
-		Umask:      fileMode(getUmask()),
+		Umask:      fileMode(chezmoi.Umask),
 		Color:      "auto",
 		Format:     "json",
 		Diff: diffCmdConfig{
@@ -249,14 +249,14 @@ func (c *Config) addTemplateFunc(key string, value interface{}) {
 	c.templateFuncs[key] = value
 }
 
-func (c *Config) applyArgs(targetSystem chezmoi.System, targetDir string, args []string, include *chezmoi.IncludeSet, recursive bool) error {
+func (c *Config) applyArgs(targetSystem chezmoi.System, targetDir string, args []string, include *chezmoi.IncludeSet, recursive bool, umask os.FileMode) error {
 	s, err := c.getSourceState()
 	if err != nil {
 		return err
 	}
 
 	if len(args) == 0 {
-		return s.ApplyAll(targetSystem, targetDir, include)
+		return s.ApplyAll(targetSystem, targetDir, include, umask)
 	}
 
 	targetNames, err := c.getTargetNames(s, args, getTargetNamesOptions{
@@ -268,7 +268,7 @@ func (c *Config) applyArgs(targetSystem chezmoi.System, targetDir string, args [
 	}
 
 	for _, targetName := range targetNames {
-		if err := s.ApplyOne(targetSystem, targetDir, targetName, include); err != nil {
+		if err := s.ApplyOne(targetSystem, targetDir, targetName, include, umask); err != nil {
 			return err
 		}
 	}

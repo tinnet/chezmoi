@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
 	"github.com/twpayne/chezmoi/next/internal/chezmoi"
@@ -31,7 +33,7 @@ func init() {
 
 func (c *Config) runVerifyCmd(cmd *cobra.Command, args []string) error {
 	dryRunSystem := chezmoi.NewDryRunSystem(c.destSystem)
-	if err := c.applyArgs(dryRunSystem, c.DestDir, args, c.verify.include, c.verify.recursive); err != nil {
+	if err := c.applyArgs(dryRunSystem, c.DestDir, args, c.verify.include, c.verify.recursive, os.FileMode(c.Umask)); err != nil {
 		return err
 	}
 	if dryRunSystem.Modified() {

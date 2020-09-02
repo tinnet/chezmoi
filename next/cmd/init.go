@@ -113,7 +113,7 @@ func (c *Config) runInitCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Apply.
-	return c.applyArgs(c.destSystem, c.DestDir, nil, chezmoi.NewIncludeSet(chezmoi.IncludeAll), true)
+	return c.applyArgs(c.destSystem, c.DestDir, nil, chezmoi.NewIncludeSet(chezmoi.IncludeAll), true, os.FileMode(c.Umask))
 }
 
 // createConfigFile creates a config file using a template and returns its

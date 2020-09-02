@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twpayne/chezmoi/next/internal/chezmoitest"
 	"github.com/twpayne/go-vfs/vfst"
 )
 
@@ -35,7 +36,7 @@ func TestTARSystem(t *testing.T) {
 	defer cleanup()
 
 	s := NewSourceState(
-		WithSystem(NewRealSystem(fs, newTestPersistentState())),
+		WithSystem(NewRealSystem(fs, chezmoitest.NewPersistentState())),
 		WithSourcePath("/home/user/.local/share/chezmoi"),
 	)
 	require.NoError(t, s.Read())
@@ -43,7 +44,7 @@ func TestTARSystem(t *testing.T) {
 
 	b := &bytes.Buffer{}
 	tarSystem := NewTARSystem(b, tar.Header{})
-	require.NoError(t, s.ApplyAll(tarSystem, "", NewIncludeSet(IncludeAll)))
+	require.NoError(t, s.ApplyAll(tarSystem, "", NewIncludeSet(IncludeAll), 0))
 
 	r := tar.NewReader(b)
 	for _, tc := range []struct {
@@ -56,13 +57,13 @@ func TestTARSystem(t *testing.T) {
 		{
 			expectedTypeflag: tar.TypeDir,
 			expectedName:     "dir/",
-			expectedMode:     0o755,
+			expectedMode:     0o777,
 		},
 		{
 			expectedTypeflag: tar.TypeReg,
 			expectedName:     "dir/foo",
 			expectedContents: []byte("bar"),
-			expectedMode:     0o644,
+			expectedMode:     0o666,
 		},
 		{
 			expectedTypeflag: tar.TypeReg,

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
 	"github.com/twpayne/chezmoi/next/internal/chezmoi"
@@ -63,5 +65,5 @@ func (c *Config) runEditCmd(cmd *cobra.Command, args []string, s *chezmoi.Source
 
 	// FIXME --diff
 	// FIXME --prompt
-	return c.applyArgs(c.destSystem, c.DestDir, args, c.edit.include, c.edit.recursive)
+	return c.applyArgs(c.destSystem, c.DestDir, args, c.edit.include, c.edit.recursive, os.FileMode(c.Umask))
 }

@@ -50,6 +50,7 @@ func TestScript(t *testing.T) {
 			"mkfile":      cmdMkFile,
 			"mkhomedir":   cmdMkHomeDir,
 			"mksourcedir": cmdMkSourceDir,
+			"umask":       cmdUmask,
 			"unix2dos":    cmdUNIX2DOS,
 		},
 		Condition: func(cond string) (bool, error) {
@@ -98,14 +99,14 @@ func cmdCmpMod(ts *testscript.TestScript, neg bool, args []string) {
 	if err != nil || os.FileMode(mode64)&os.ModePerm != os.FileMode(mode64) {
 		ts.Fatalf("invalid mode: %s", args[0])
 	}
-	if !chezmoi.POSIXFileModes {
+	if !chezmoi.UNIXFileModes {
 		return
 	}
 	info, err := os.Stat(args[1])
 	if err != nil {
 		ts.Fatalf("%s: %v", args[1], err)
 	}
-	equal := info.Mode()&os.ModePerm == os.FileMode(mode64)
+	equal := info.Mode()&os.ModePerm&^chezmoi.Umask == os.FileMode(mode64)&^chezmoi.Umask
 	if neg && equal {
 		ts.Fatalf("%s unexpectedly has mode %03o", args[1], info.Mode()&os.ModePerm)
 	}
@@ -182,7 +183,7 @@ func cmdMkHomeDir(ts *testscript.TestScript, neg bool, args []string) {
 		relPath: map[string]interface{}{
 			".bashrc": "# contents of .bashrc\n",
 			".binary": &vfst.File{
-				Perm:     0o755,
+				Perm:     0o777,
 				Contents: []byte("#!/bin/sh\n"),
 			},
 			".exists": "# contents of .exists\n",
@@ -269,6 +270,21 @@ func cmdUNIX2DOS(ts *testscript.TestScript, neg bool, args []string) {
 	}
 }
 
+// cmdUmask sets the umask.
+func cmdUmask(ts *testscript.TestScript, neg bool, args []string) {
+	if neg {
+		ts.Fatalf("unsupported: ! umask")
+	}
+	if len(args) != 1 {
+		ts.Fatalf("usage: umask umask")
+	}
+	umask, err := strconv.ParseUint(args[0], 8, 32)
+	if err != nil {
+		ts.Fatalf("invalid umask: %s", args[0])
+	}
+	setUmask(int(umask))
+}
+
 func setup(env *testscript.Env) error {
 	var (
 		binDir           = filepath.Join(env.WorkDir, "bin")
@@ -307,11 +323,11 @@ func setup(env *testscript.Env) error {
 			"editor": &vfst.File{
 				Perm: 0o755,
 				Contents: []byte(strings.Join([]string{
-					`#!/bin/sh`,
-					``,
-					`for filename in $*; do`,
-					`    echo "# edited" >> $filename`,
-					`done`,
+					"#!/bin/sh",
+					"",
+					"for filename in $*; do",
+					"    echo '# edited' >> $filename",
+					"done",
 				}, "\n")),
 			},
 			// shell is a non-interactive script that appends the directory in
@@ -319,9 +335,9 @@ func setup(env *testscript.Env) error {
 			"shell": &vfst.File{
 				Perm: 0o755,
 				Contents: []byte(strings.Join([]string{
-					`#!/bin/sh`,
-					``,
-					`echo $PWD >> ` + filepath.Join(env.WorkDir, "shell.log"),
+					"#!/bin/sh",
+					"",
+					"echo $PWD >> '" + filepath.Join(env.WorkDir, "shell.log") + "'",
 				}, "\n")),
 			},
 		}

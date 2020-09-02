@@ -17,7 +17,7 @@ type RealSystem struct {
 	vfs.FS
 	PersistentState
 	devCache     map[string]uint // devCache maps directories to device numbers.
-	tempDirCache map[uint]string // tempDir maps device numbers to renameio temporary directories.
+	tempDirCache map[uint]string // tempDirCache maps device numbers to renameio temporary directories.
 }
 
 // NewRealSystem returns a System that acts on fs.
@@ -32,7 +32,7 @@ func NewRealSystem(fs vfs.FS, persistentState PersistentState) *RealSystem {
 
 // Chmod implements System.Glob.
 func (s *RealSystem) Chmod(name string, mode os.FileMode) error {
-	if !POSIXFileModes {
+	if !UNIXFileModes {
 		return nil
 	}
 	return s.FS.Chmod(name, mode)
@@ -79,7 +79,7 @@ func (s *RealSystem) RunScript(scriptname, dir string, data []byte) (err error) 
 
 	// Make the script private before writing it in case it contains any
 	// secrets.
-	if POSIXFileModes {
+	if UNIXFileModes {
 		if err = f.Chmod(0o700); err != nil {
 			return
 		}
@@ -130,7 +130,7 @@ func WriteFile(fs vfs.FS, filename string, data []byte, perm os.FileMode) (err e
 	// Set permissions after truncation but before writing any data, in case the
 	// file contained private data before, but before writing the new contents,
 	// in case the contents contain private data after.
-	if POSIXFileModes {
+	if UNIXFileModes {
 		if err = f.Chmod(perm); err != nil {
 			return
 		}

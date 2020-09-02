@@ -36,13 +36,13 @@ chezmoi verify
 [windows] stop 'remaining tests use POSIX file modes'
 
 # test that chezmoi verify fails when a file's permissions are changed
-chmod 755 $HOME/.bashrc
+chmod 777 $HOME/.bashrc
 ! chezmoi verify
-chmod 644 $HOME/.bashrc
+chmod 666 $HOME/.bashrc
 chezmoi verify
 
 # test that chezmoi verify fails when a dir's permissions are changed
-chmod 755 $HOME/.ssh
+chmod 777 $HOME/.ssh
 ! chezmoi verify
 chmod 700 $HOME/.ssh
 chezmoi verify

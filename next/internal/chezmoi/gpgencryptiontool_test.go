@@ -23,7 +23,7 @@ func TestGPGEncryptionTool(t *testing.T) {
 		assert.NoError(t, os.RemoveAll(tempDir))
 	}()
 
-	if POSIXFileModes {
+	if UNIXFileModes {
 		require.NoError(t, os.Chmod(tempDir, 0o700))
 	}
 

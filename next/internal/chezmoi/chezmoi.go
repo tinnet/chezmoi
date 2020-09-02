@@ -9,7 +9,7 @@ import (
 
 // Configuration constants.
 const (
-	POSIXFileModes   = runtime.GOOS != "windows"
+	UNIXFileModes   = runtime.GOOS != "windows"
 	PathSeparator    = '/'
 	PathSeparatorStr = string(PathSeparator)
 	ignorePrefix     = "."
@@ -20,8 +20,8 @@ var (
 	// DefaultTemplateOptions are the default template options.
 	DefaultTemplateOptions = []string{"missingkey=error"}
 
-	// DefaultUmask is the default umask.
-	DefaultUmask = os.FileMode(0o22)
+	// Umask is the user's umask.
+	Umask = os.ModePerm
 
 	scriptOnceStateBucket = []byte("script")
 )

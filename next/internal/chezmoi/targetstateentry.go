@@ -13,8 +13,8 @@ import (
 
 // A TargetStateEntry represents the state of an entry in the target state.
 type TargetStateEntry interface {
-	Apply(s System, destStateEntry DestStateEntry) error
-	Equal(destStateEntry DestStateEntry) (bool, error)
+	Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error
+	Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error)
 	Evaluate() error
 }
 
@@ -58,7 +58,7 @@ type scriptOnceState struct {
 }
 
 // Apply updates destStateEntry to match t.
-func (t *TargetStateAbsent) Apply(s System, destStateEntry DestStateEntry) error {
+func (t *TargetStateAbsent) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
 	if _, ok := destStateEntry.(*DestStateAbsent); ok {
 		return nil
 	}
@@ -66,7 +66,7 @@ func (t *TargetStateAbsent) Apply(s System, destStateEntry DestStateEntry) error
 }
 
 // Equal returns true if destStateEntry matches t.
-func (t *TargetStateAbsent) Equal(destStateEntry DestStateEntry) (bool, error) {
+func (t *TargetStateAbsent) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
 	_, ok := destStateEntry.(*DestStateAbsent)
 	if !ok {
 		return false, nil
@@ -80,9 +80,9 @@ func (t *TargetStateAbsent) Evaluate() error {
 }
 
 // Apply updates destStateEntry to match t. It does not recurse.
-func (t *TargetStateDir) Apply(s System, destStateEntry DestStateEntry) error {
+func (t *TargetStateDir) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
 	if destStateDir, ok := destStateEntry.(*DestStateDir); ok {
-		if !POSIXFileModes || destStateDir.perm == t.perm {
+		if destStateDir.perm&^umask == t.perm&^umask {
 			return nil
 		}
 		return s.Chmod(destStateDir.Path(), t.perm)
@@ -94,12 +94,12 @@ func (t *TargetStateDir) Apply(s System, destStateEntry DestStateEntry) error {
 }
 
 // Equal returns true if destStateEntry matches t. It does not recurse.
-func (t *TargetStateDir) Equal(destStateEntry DestStateEntry) (bool, error) {
+func (t *TargetStateDir) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
 	destStateDir, ok := destStateEntry.(*DestStateDir)
 	if !ok {
 		return false, nil
 	}
-	if POSIXFileModes && destStateDir.perm != t.perm {
+	if destStateDir.perm&^umask != t.perm&^umask {
 		return false, nil
 	}
 	return true, nil
@@ -111,7 +111,7 @@ func (t *TargetStateDir) Evaluate() error {
 }
 
 // Apply updates destStateEntry to match t.
-func (t *TargetStateFile) Apply(s System, destStateEntry DestStateEntry) error {
+func (t *TargetStateFile) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
 	if destStateFile, ok := destStateEntry.(*DestStateFile); ok {
 		// Compare file contents using only their SHA256 sums. This is so that
 		// we can compare last-written states without storing the full contents
@@ -125,7 +125,7 @@ func (t *TargetStateFile) Apply(s System, destStateEntry DestStateEntry) error {
 			return err
 		}
 		if bytes.Equal(destContentsSHA256, contentsSHA256) {
-			if !POSIXFileModes || destStateFile.perm == t.perm {
+			if destStateFile.perm&^umask == t.perm&^umask {
 				return nil
 			}
 			return s.Chmod(destStateFile.Path(), t.perm)
@@ -141,12 +141,12 @@ func (t *TargetStateFile) Apply(s System, destStateEntry DestStateEntry) error {
 }
 
 // Equal returns true if destStateEntry matches t.
-func (t *TargetStateFile) Equal(destStateEntry DestStateEntry) (bool, error) {
+func (t *TargetStateFile) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
 	destStateFile, ok := destStateEntry.(*DestStateFile)
 	if !ok {
 		return false, nil
 	}
-	if POSIXFileModes && destStateFile.perm != t.perm {
+	if destStateFile.perm&^umask != t.perm&^umask {
 		return false, nil
 	}
 	destContentsSHA256, err := destStateFile.ContentsSHA256()
@@ -170,9 +170,9 @@ func (t *TargetStateFile) Evaluate() error {
 }
 
 // Apply updates destStateEntry to match t.
-func (t *TargetStatePresent) Apply(s System, destStateEntry DestStateEntry) error {
+func (t *TargetStatePresent) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
 	if destStateFile, ok := destStateEntry.(*DestStateFile); ok {
-		if !POSIXFileModes || destStateFile.perm == t.perm {
+		if destStateFile.perm&^umask == t.perm&^umask {
 			return nil
 		}
 		return s.Chmod(destStateFile.Path(), t.perm)
@@ -187,12 +187,12 @@ func (t *TargetStatePresent) Apply(s System, destStateEntry DestStateEntry) erro
 }
 
 // Equal returns true if destStateEntry matches t.
-func (t *TargetStatePresent) Equal(destStateEntry DestStateEntry) (bool, error) {
+func (t *TargetStatePresent) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
 	destStateFile, ok := destStateEntry.(*DestStateFile)
 	if !ok {
 		return false, nil
 	}
-	if POSIXFileModes && destStateFile.perm != t.perm {
+	if destStateFile.perm&^umask != t.perm&^umask {
 		return false, nil
 	}
 	return true, nil
@@ -205,7 +205,7 @@ func (t *TargetStatePresent) Evaluate() error {
 }
 
 // Apply runs t.
-func (t *TargetStateScript) Apply(s System, destStateEntry DestStateEntry) error {
+func (t *TargetStateScript) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
 	var (
 		bucket     = scriptOnceStateBucket
 		key        []byte
@@ -254,7 +254,7 @@ func (t *TargetStateScript) Apply(s System, destStateEntry DestStateEntry) error
 }
 
 // Equal returns true if destStateEntry matches t.
-func (t *TargetStateScript) Equal(destStateEntry DestStateEntry) (bool, error) {
+func (t *TargetStateScript) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
 	// Scripts are independent of the destination state.
 	// FIXME maybe the destination state should store the sha256 sums of executed scripts
 	return true, nil
@@ -267,7 +267,7 @@ func (t *TargetStateScript) Evaluate() error {
 }
 
 // Apply updates destStateEntry to match t.
-func (t *TargetStateSymlink) Apply(s System, destStateEntry DestStateEntry) error {
+func (t *TargetStateSymlink) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
 	if destStateSymlink, ok := destStateEntry.(*DestStateSymlink); ok {
 		destLinkname, err := destStateSymlink.Linkname()
 		if err != nil {
@@ -292,7 +292,7 @@ func (t *TargetStateSymlink) Apply(s System, destStateEntry DestStateEntry) erro
 }
 
 // Equal returns true if destStateEntry matches t.
-func (t *TargetStateSymlink) Equal(destStateEntry DestStateEntry) (bool, error) {
+func (t *TargetStateSymlink) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
 	destStateSymlink, ok := destStateEntry.(*DestStateSymlink)
 	if !ok {
 		return false, nil

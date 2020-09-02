@@ -97,7 +97,7 @@ func WithUmask(umask os.FileMode) SourceStateOption {
 func NewSourceState(options ...SourceStateOption) *SourceState {
 	s := &SourceState{
 		entries:              make(map[string]SourceStateEntry),
-		umask:                DefaultUmask,
+		umask:                Umask,
 		encryptionTool:       &nullEncryptionTool{},
 		ignore:               NewPatternSet(),
 		priorityTemplateData: make(map[string]interface{}),
@@ -119,6 +119,7 @@ type AddOptions struct {
 	Exact        bool
 	Include      *IncludeSet
 	Template     bool
+	umask        os.FileMode
 }
 
 // Add adds sourceStateEntry to s.
@@ -143,13 +144,13 @@ func (s *SourceState) Add(sourceSystem System, destDir string, destPathInfos map
 		}
 	}
 	// FIXME include
-	return targetSourceState.ApplyAll(sourceSystem, s.sourcePath, options.Include)
+	return targetSourceState.ApplyAll(sourceSystem, s.sourcePath, options.Include, options.umask)
 }
 
 // ApplyAll updates targetDir in fs to match s.
-func (s *SourceState) ApplyAll(targetSystem System, targetDir string, include *IncludeSet) error {
+func (s *SourceState) ApplyAll(targetSystem System, targetDir string, include *IncludeSet, umask os.FileMode) error {
 	for _, targetName := range s.sortedTargetNames() {
-		if err := s.ApplyOne(targetSystem, targetDir, targetName, include); err != nil {
+		if err := s.ApplyOne(targetSystem, targetDir, targetName, include, umask); err != nil {
 			return err
 		}
 	}
@@ -157,7 +158,7 @@ func (s *SourceState) ApplyAll(targetSystem System, targetDir string, include *I
 }
 
 // ApplyOne updates targetName in targetDir on fs to match s using s.
-func (s *SourceState) ApplyOne(targetSystem System, targetDir, targetName string, include *IncludeSet) error {
+func (s *SourceState) ApplyOne(targetSystem System, targetDir, targetName string, include *IncludeSet, umask os.FileMode) error {
 	targetStateEntry, err := s.entries[targetName].TargetStateEntry()
 	if err != nil {
 		return err
@@ -173,7 +174,7 @@ func (s *SourceState) ApplyOne(targetSystem System, targetDir, targetName string
 		return err
 	}
 
-	if err := targetStateEntry.Apply(targetSystem, destStateEntry); err != nil {
+	if err := targetStateEntry.Apply(targetSystem, destStateEntry, umask); err != nil {
 		return err
 	}
 
@@ -546,7 +547,7 @@ func (s *SourceState) executeTemplate(path string) ([]byte, error) {
 
 func (s *SourceState) newSourceStateDir(sourcePath string, da DirAttributes) *SourceStateDir {
 	targetStateDir := &TargetStateDir{
-		perm:  da.Perm() &^ s.umask,
+		perm:  da.Perm(),
 		exact: da.Exact,
 	}
 
@@ -591,7 +592,7 @@ func (s *SourceState) newSourceStateFile(sourcePath string, fa FileAttributes, t
 			}
 			return &TargetStateFile{
 				lazyContents: newLazyContents(contents),
-				perm:         fa.Perm() &^ s.umask,
+				perm:         fa.Perm(),
 			}, nil
 		}
 	case SourceFileTypePresent:
@@ -608,7 +609,7 @@ func (s *SourceState) newSourceStateFile(sourcePath string, fa FileAttributes, t
 			}
 			return &TargetStatePresent{
 				lazyContents: newLazyContents(contents),
-				perm:         fa.Perm() &^ s.umask,
+				perm:         fa.Perm(),
 			}, nil
 		}
 	case SourceFileTypeScript:
@@ -686,7 +687,7 @@ func (s *SourceState) sourceStateEntry(system System, destPath string, info os.F
 			Attributes: DirAttributes{
 				Name:    info.Name(),
 				Exact:   options.Exact,
-				Private: POSIXFileModes && info.Mode()&os.ModePerm&0o77 == 0,
+				Private: UNIXFileModes && info.Mode()&os.ModePerm&0o77 == 0,
 			},
 		}, nil
 	case *DestStateFile:
@@ -704,8 +705,8 @@ func (s *SourceState) sourceStateEntry(system System, destPath string, info os.F
 				Type:       SourceFileTypeFile,
 				Empty:      options.Empty,
 				Encrypted:  options.Encrypt,
-				Executable: POSIXFileModes && info.Mode()&os.ModePerm&0o111 != 0,
-				Private:    POSIXFileModes && info.Mode()&os.ModePerm&0o77 == 0,
+				Executable: UNIXFileModes && info.Mode()&os.ModePerm&0o111 != 0,
+				Private:    UNIXFileModes && info.Mode()&os.ModePerm&0o77 == 0,
 				Template:   options.Template || options.AutoTemplate,
 			},
 			lazyContents: &lazyContents{
